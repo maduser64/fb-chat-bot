@@ -663,34 +663,6 @@ class Client(object):
                         new_title = delta['name']
                         self.on_group_titleChanged(thread_fbid, author_id, new_title, delta)
 
-                    # Changed emoji
-                    elif delta['type'] == 'change_thread_icon':
-                        new_emoji = delta['untypedData']['thread_icon']
-                            
-                        if thread_fbid:
-                            self.on_group_emojiChanged(thread_fbid, author_id, new_emoji, delta)
-                        else:
-                            self.on_emojiChanged(author_id, new_emoji, delta)
-
-                    # Changed chat color
-                    elif delta['type'] == 'change_thread_theme':
-                        new_color = delta['untypedData']['theme_color']
-                            
-                        if thread_fbid:
-                            self.on_group_colorChanged(thread_fbid, author_id, new_color, delta)
-                        else:
-                            self.on_colorChanged(author_id, new_color, delta)
-
-                    # Changed nickname
-                    elif delta['type'] == 'change_thread_nickname':
-                        changed_fbid = delta['untypedData']['participant_id']
-                        new_nickname = delta['untypedData']['nickname']
-                            
-                        if thread_fbid:
-                            self.on_group_nicknameChanged(thread_fbid, author_id, changed_fbid, new_nickname, delta)
-                        else:
-                            self.on_nicknameChanged(author_id, changed_fbid, new_nickname, delta)
-
                     # Message delivered
                     elif delta['class'] == 'DeliveryReceipt':
                         time_delivered = delta['deliveredWatermarkTimestampMs']
@@ -699,6 +671,36 @@ class Client(object):
                             self.on_group_messageDelivered(thread_fbid, author_id, time_delivered, delta)
                         else:
                             self.on_messageDelivered(author_id, time_delivered, delta)
+
+                    elif 'type' in delta:
+                        # Changed emoji
+                        if delta['type'] == 'change_thread_icon':
+                            new_emoji = delta['untypedData']['thread_icon']
+                            
+                            if thread_fbid:
+                                self.on_group_emojiChanged(thread_fbid, author_id, new_emoji, delta)
+                            else:
+                                self.on_emojiChanged(author_id, new_emoji, delta)
+
+                        # Changed chat color
+                        elif delta['type'] == 'change_thread_theme':
+                            new_color = delta['untypedData']['theme_color']
+                            
+                            if thread_fbid:
+                                self.on_group_colorChanged(thread_fbid, author_id, new_color, delta)
+                            else:
+                                self.on_colorChanged(author_id, new_color, delta)
+
+                        # Changed nickname
+                        elif delta['type'] == 'change_thread_nickname':
+                            changed_fbid = delta['untypedData']['participant_id']
+                            new_nickname = delta['untypedData']['nickname']
+                            
+                            if thread_fbid:
+                                self.on_group_nicknameChanged(thread_fbid, author_id, changed_fbid, new_nickname, delta)
+                            else:
+                                self.on_nicknameChanged(author_id, changed_fbid, new_nickname, delta)
+
 
 
                 # Private message typing
@@ -786,77 +788,77 @@ class Client(object):
         
         
     def on_group_typing(self, thread_fbid, author_id, metadata):
-        self.log("%s typing in %s" % (author_id, thread_fbid))
+        #self.log("%s typing in %s" % (author_id, thread_fbid))
         pass
 
     def on_typing(self, author_id, metadata):
-        self.log("%s typing" % (author_id))
+        #self.log("%s typing" % (author_id))
         pass
 
 
     def on_group_typing_stopped(self, thread_fbid, author_id, metadata):
-        self.log("%s stopped typing in %s" % (author_id, thread_fbid))
+        #self.log("%s stopped typing in %s" % (author_id, thread_fbid))
         pass
 
     def on_typing_stopped(self, author_id, metadata):
-        self.log("%s stopped typing" % (author_id))
+        s#elf.log("%s stopped typing" % (author_id))
         pass
 
 
     def on_group_seen(self, thread_fbid, author_id, time_seen, metadata):
-        self.log("%s seen in %s at %s" % (author_id, thread_fbid, time_seen))
+        #self.log("%s seen in %s at %s" % (author_id, thread_fbid, time_seen))
         pass
 
     def on_seen(self, author_id, time_seen, metadata):
-        self.log("%s seen in at %s" % (author_id, time_seen))
+        #self.log("%s seen in at %s" % (author_id, time_seen))
         pass
 
     def on_group_nicknameChanged(self, thread_fbid, author_id, changed_fbid, new_nickname, delta):
-        self.log("%s changed nickname of %s to %s in %s" % (author_id, changed_fbid, new_nickname, thread_fbid))
+        #self.log("%s changed nickname of %s to %s in %s" % (author_id, changed_fbid, new_nickname, thread_fbid))
         pass
 
     def on_nicknameChanged(self, author_id, changed_fbid, new_nickname, delta):
-        self.log("%s changed nickname of %s to %s" % (author_id, changed_fbid, new_nickname))
+        #self.log("%s changed nickname of %s to %s" % (author_id, changed_fbid, new_nickname))
         pass
     
 
     def on_group_emojiChanged(self, thread_fbid, author_id, new_emoji, delta):
-        self.log("%s changed emoji of %s to %s" % (author_id, thread_fbid, new_emoji))
+        #self.log("%s changed emoji of %s to %s" % (author_id, thread_fbid, new_emoji))
         pass
 
     def on_emojiChanged(self, author_id, new_emoji, delta):
-        self.log("%s changed emoji to %s" % (author_id, new_emoji))
+        #self.log("%s changed emoji to %s" % (author_id, new_emoji))
         pass
 
 
     def on_group_colorChanged(self, thread_fbid, author_id, new_color, delta):
-        self.log("%s changed color of %s to %s" % (author_id, thread_fbid, new_color))
+        #self.log("%s changed color of %s to %s" % (author_id, thread_fbid, new_color))
         pass
 
     def on_colorChanged(self, author_id, new_color, delta):
-        self.log("%s changed color to %s" % (author_id, new_color))
+        #self.log("%s changed color to %s" % (author_id, new_color))
         pass
     
 
     def on_group_messageDelivered(self, thread_fbid, author_id, time_delivered, delta):
-        self.log("Message delivered to %s in %s at %s" % (author_id, thread_fbid, time_delivered))
+        #self.log("Message delivered to %s in %s at %s" % (author_id, thread_fbid, time_delivered))
         pass
 
     def on_messageDelivered(self, author_id, time_delivered, delta):
-        self.log("Message delivered to %s at %s" % (author_id, time_delivered))
+        #self.log("Message delivered to %s at %s" % (author_id, time_delivered))
         pass
 
 
     def on_group_added(self, thread_fbid, author_id, added_list, metadata):
-        self.log("%s added %s people to %s" % (author_id, str(len(added_list)), thread_fbid))
+        #self.log("%s added %s people to %s" % (author_id, str(len(added_list)), thread_fbid))
         pass
 
     def on_group_left(self, thread_fbid, author_id, leaver_fbid, metadata):
-        self.log("%s removed %s from %s" % (author_id, leaver_fbid, thread_fbid))
+        #self.log("%s removed %s from %s" % (author_id, leaver_fbid, thread_fbid))
         pass
 
     def on_group_titleChanged(self, thread_fbid, author_id, new_title, delta):
-        self.log("%s changed title of %s to %s" % (author_id, thread_fbid, new_title))
+        #self.log("%s changed title of %s to %s" % (author_id, thread_fbid, new_title))
         pass
 
 

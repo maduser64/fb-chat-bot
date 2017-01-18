@@ -2,6 +2,8 @@ import io
 import json
 import time
 import threading
+import shutil
+import os
 
 class Stats:
     """Manages stats file"""
@@ -11,9 +13,15 @@ class Stats:
         self.stats_file = stats_file
         self.last_update = time.time()
 
-        with open(stats_file, "r") as infile:
-            #text = infile.read()
-            self.vals = json.load(infile)
+        # Backs ups stats file before opening, in case something gets corrupted
+        # Happened numerous times for me
+        try:
+            shutil.copyfile(stats_file, stats_file + ".temp")
+            with open(stats_file, "r", encoding = "utf-8") as infile:
+                self.vals = json.load(infile)
+        except:
+            os.remove(stats_file)
+            os.rename(stats_file + ".temp", stats_file)
         
         self.vals["times_launched"] += 1
         
@@ -33,7 +41,7 @@ class Stats:
 
         # Writes only if data is modified
         if self.__dirty:
-            with open(self.stats_file, "w") as outfile:
+            with open(self.stats_file, "w", encoding = "utf-8") as outfile:
                 json.dump(self.vals, outfile, indent = "\t")
             self.__dirty = False
 

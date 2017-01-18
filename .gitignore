@@ -280,3 +280,4 @@ fb-chat-bot.sln
 fb-chat-bot.pyproj
 my_config - Copy.json
 my_stats.json
+*.temp

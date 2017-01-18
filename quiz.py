@@ -10,11 +10,7 @@ HIDDEN_CHAR = "-"
 QUIZ = "quiz"
 QUESTIONS = "total_questions"
 ANSWERED = "total_answered"
-GUESSED = "total_guessed"
 LAST_ANSWERED = "last_answered"
-LAST_GUESSED = "last_guessed"
-LAST_QUESTION = "last_question"
-LAST_ANSWER = "last_answer"
 USERS = "users"
 USER_COMBO = "combo"
 POINTS = "points"
@@ -67,11 +63,17 @@ class Quiz():
         return self.__question
 
     def revealLetter(self):
-        """Makes one letter visible. First revealed is first, other random. Returns if full reveal"""
+        """Makes one letter visible. First and second are revealed first,
+        other random. Returns false if full reveal"""
         # All letters hidden
         string = list(self.__hidden)
         if self.__hidden_count == len(self.__answer):
             string[0] = self.__answer[0]
+            self.__hidden = "".join(string)
+            self.__hidden_count -= 1
+            return True
+        elif self.__hidden_count == len(self.__answer) - 1 and len(self.__answer) != 2:
+            string[1] = self.__answer[1]
             self.__hidden = "".join(string)
             self.__hidden_count -= 1
             return True
@@ -92,7 +94,6 @@ class Quiz():
 
     def guessAnswer(self, name_code, guess):
         """If guess is correct, updates stats and returns points. Returns `None` otherwise"""
-        self.updateQuizGuessed(name_code)
         if unidecode(guess.lower()) == self.__answer.lower():
             self.__accepts_answers = False
 
@@ -119,32 +120,13 @@ class Quiz():
     def updateQuizQuestions(self):
         self.__stats.vals[QUIZ][QUESTIONS] += 1
         self.__stats.makeDirty()
-    
-    def updateQuizGuessed(self, name_code):
-        stats = self.__stats.vals[QUIZ]
-        time_now = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
-
-        stats[GUESSED] += 1
-        stats[LAST_GUESSED] = time_now
         
-        try: user = stats[USERS][name_code]
-        except:
-            self.insertUserToStats(name_code)
-            user = stats[USERS][name_code]
-
-        user[GUESSED] += 1
-        user[LAST_GUESSED] = time_now
-
-        self.__stats.makeDirty()
-    
     def updateQuizPoints(self, name_code, points):
         stats = self.__stats.vals[QUIZ]
         time_now = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())
 
         stats[ANSWERED] += 1
         stats[LAST_ANSWERED] = time_now
-        stats[LAST_QUESTION] = self.__question
-        stats[LAST_ANSWER] = self.__answer
         
         try: user = stats[USERS][name_code]
         except:
@@ -159,9 +141,6 @@ class Quiz():
             if user[USER_COMBO] < len(self.__current_combo):
                 user[USER_COMBO] = len(self.__current_combo)
 
-        user[LAST_QUESTION] = self.__question
-        user[LAST_ANSWER] = self.__answer
-
         self.__stats.makeDirty()
 
     def insertUserToStats(self, name_code):
@@ -169,12 +148,8 @@ class Quiz():
         stats = self.__stats.vals[QUIZ][USERS]
         stats[name_code] = { POINTS : 0,
                              ANSWERED: 0,
-                             GUESSED : 0,
                              USER_COMBO: 0,
-                             LAST_ANSWERED : "",
-                             LAST_GUESSED : "",
-                             LAST_QUESTION : "",
-                             LAST_ANSWER : "" }
+                             LAST_ANSWERED : "" }
         self.__stats.makeDirty()
 
     def getTop(self, count):
