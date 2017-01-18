@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-
 """
     fbchat
     ~~~~~~
@@ -10,7 +8,6 @@
     :copyright: (c) 2015-2016 by PidgeyL.
     :license: BSD, see LICENSE for more details.
 """
-
 import requests
 import json
 from uuid import uuid1
@@ -25,21 +22,22 @@ import time
 import os
 import sys
 # URLs
-LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
-SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
-SendURL      ="https://www.facebook.com/messaging/send/"
-ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
-ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
-MessagesURL  ="https://www.facebook.com/ajax/mercury/thread_info.php"
-ReadStatusURL="https://www.facebook.com/ajax/mercury/change_read_status.php"
-DeliveredURL ="https://www.facebook.com/ajax/mercury/delivery_receipts.php"
-MarkSeenURL  ="https://www.facebook.com/ajax/mercury/mark_seen.php"
-BaseURL      ="https://www.facebook.com"
-MobileURL    ="https://m.facebook.com/"
-StickyURL    ="https://0-edge-chat.facebook.com/pull"
-PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
-UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
-UserInfoURL  ="https://www.facebook.com/chat/user_info/"
+LoginURL      = "https://m.facebook.com/login.php?login_attempt=1"
+SearchURL     = "https://www.facebook.com/ajax/typeahead/search.php"
+SendURL       = "https://www.facebook.com/messaging/send/"
+ThreadsURL    = "https://www.facebook.com/ajax/mercury/threadlist_info.php"
+ThreadSyncURL = "https://www.facebook.com/ajax/mercury/thread_sync.php"
+MessagesURL   = "https://www.facebook.com/ajax/mercury/thread_info.php"
+ReadStatusURL = "https://www.facebook.com/ajax/mercury/change_read_status.php"
+DeliveredURL  = "https://www.facebook.com/ajax/mercury/delivery_receipts.php"
+MarkSeenURL   = "https://www.facebook.com/ajax/mercury/mark_seen.php"
+BaseURL       = "https://www.facebook.com"
+MobileURL     = "https://m.facebook.com/"
+StickyURL     = "https://0-edge-chat.facebook.com/pull"
+PingURL       = "https://0-channel-proxy-06-ash2.facebook.com/active_ping"
+UploadURL     = "https://upload.facebook.com/ajax/mercury/upload.php"
+UserInfoURL   = "https://www.facebook.com/chat/user_info/"
+
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -103,7 +101,7 @@ class Client(object):
 
 
     def log(self, msg):
-        ''' Writes log to file. Each day has separate file '''
+        """ Writes log to file. Each day has separate file """
         try:
             os.mkdir("log")
         except:
@@ -114,10 +112,32 @@ class Client(object):
         msg = time.strftime("[%H:%M:%S] ", time.localtime()) + msg
 
         today = time.strftime("%Y-%m-%d", time.localtime()) + ".log"
-        with open("log/" + today, "a") as outfile:
+        with open("log/" + today, "a", encoding = "utf-8") as outfile:
             outfile.write(msg + "\n")
 
         print(msg)
+
+    def listen(self, markAlive = True):
+        self.listening = True
+        sticky, pool = self._getSticky()
+
+        if self.debug:
+            self.log("Listening...")
+
+        self.on_listening()
+
+        while self.listening:
+            try:
+                if markAlive: self.ping(sticky)
+                try:
+                    content = self._pullMessage(sticky, pool)
+                    if content: self._parseMessage(content)
+                except requests.exceptions.RequestException as e:
+                    continue
+            except KeyboardInterrupt:
+                break
+            except requests.exceptions.Timeout:
+                pass
 
     def _setttstamp(self):
         for i in self.fb_dtsg:
@@ -125,10 +145,10 @@ class Client(object):
         self.ttstamp += '2'
 
     def _generatePayload(self, query):
-        '''
+        """
         Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
-        '''
+        """
         payload = self.payloadDefault.copy()
         if query:
             payload.update(query)
@@ -204,9 +224,6 @@ class Client(object):
         else:
             return False
 
-    def listen(self):
-        pass
-
     def getUsers(self, name):
         """Find and get user by his/her name
 
@@ -231,7 +248,7 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def __send(self, message, recipient_id, like, image_id, is_group):
+    def __send(self, recipient_id, message, like, image_id, is_group):
         """Send a message to a user or group chat
 
         :param message: a text that you want to send
@@ -240,12 +257,6 @@ class Client(object):
         :param image_id: id for the image to send, gotten from the UploadURL
         :param is_group: determines if the recipient_id is for user or a group
         """
-        if is_group:
-            thread_id = recipient_id
-            user_id = None
-        else:
-            thread_id = None
-            user_id = recipient_id
 
         messageAndOTID=generateOfflineThreadingID()
         timestamp = now()
@@ -283,21 +294,17 @@ class Client(object):
                  'specific_to_list[1]' : 'fbid:' + str(self.uid) }
 
 
-        if is_group:
-            data["thread_fbid"] = recipient_id
-        else:
-            data["other_user_fbid"] = recipient_id
+        if is_group: data["thread_fbid"] = recipient_id
+        else: data["other_user_fbid"] = recipient_id
 
-        if image_id:
-            data['image_ids[0]'] = image_id
+        if image_id: data['image_ids[0]'] = image_id
 
-        if like:
-            data["sticker_id"] = like
+        if like: data["sticker_id"] = like
 
         r = self._post(SendURL, data)
 
         if self.debug:
-            if (r.status_code != 200):
+            if r.status_code != 200:
                 self.log(r)
                 self.log(data)
 
@@ -311,7 +318,7 @@ class Client(object):
             like (optional): size of the like sticker you want to send
         """
 
-        return self.__send(message, user_fbid, like, None, False)
+        return self.__send(user_fbid,message, like, None, False)
 
     def sendLike(self, like, user_fbid):
         """Send like to a user
@@ -320,7 +327,7 @@ class Client(object):
         :param user_fbid: the user fbid that to send a message to
         :param like (optional): size of the like sticker you want to send
         """
-        return self.__send("", user_fbid, like, None, False)
+        return self.__send(user_fbid, "", like, None, False)
 
     def sendRemoteImage(self, image, user_fbid, message = "", like = None):
         """Send an image from a URL
@@ -334,7 +341,7 @@ class Client(object):
         remote_image = requests.get(image).content
         image_id = self.uploadImage({'file': (image, remote_image, mimetype)})
 
-        return self.__send(message, user_fbid, None, image_id, False)
+        return self.__send(user_fbid, message, None, image_id, False)
 
     def sendLocalImage(self, image, user_fbid, message = ""):
         """Send an image from a file path
@@ -347,9 +354,9 @@ class Client(object):
         mimetype = guess_type(image)[0]
         image_id = self.uploadImage({'file': (image, open(image), mimetype)})
 
-        return self.__send(message, user_fbid, None, image_id, False)
+        return self.__send(user_fbid, message, None, image_id, False)
     
-    def sendGroup(self, message, thread_fbid = None, like = None):
+    def group_send(self, message, thread_fbid = None, like = None):
         """Send a message to a group chat with given thread id
 
         :param message: text that you want to send
@@ -358,20 +365,20 @@ class Client(object):
         :param image: id for the image to send, gotten from the UploadURL
         """
         if not thread_fbid: 
-            if not self.thread_fbid: raise ValueError("thread_fbid not given")
+            if not self.thread_fbid: raise ValueError("thread_id not given")
             thread_fbid = self.thread_fbid
 
-        return self.__send(message, thread_fbid, like, None, True)
+        return self.__send(thread_fbid, message, like, None, True)
 
-    def sendLikeGroup(self, like, thread_fbid = None):
+    def group_sendLike(self, like, thread_fbid = None):
         if not thread_fbid: 
-            if not self.thread_fbid: raise ValueError("thread_fbid not given")
+            if not self.thread_fbid: raise ValueError("thread_id not given")
             thread_fbid = self.thread_fbid
 
-        return self.__send("", thread_fbid, like, None, True)
+        return self.__send(thread_fbid, "", like, None, True)
 
 
-    def sendRemoteImageGroup(self, image, thread_fbid = None, message = "", like = None):
+    def group_sendRemoteImage(self, image, thread_fbid = None, message = "", like = None):
         """Send an image from a URL
 
         :param message: text that you want to send
@@ -379,12 +386,12 @@ class Client(object):
         :param image: URL for the image to download and send
         """
         if not thread_fbid: 
-            if not self.thread_fbid: raise ValueError("thread_fbid not given")
+            if not self.thread_fbid: raise ValueError("thread_id not given")
             thread_fbid = self.thread_fbid
 
-        return self.sendRemoteImage(message, thread_fbid, like, image, True)
+        return self.sendRemoteImage(thread_fbid, message, like, image, True)
 
-    def sendLocalImageGroup(self, image, thread_fbid = None, message = "", like = None):
+    def group_sendLocalImage(self, image, thread_fbid = None, message = "", like = None):
         """Send an image from a file path
 
         :param message: text that you want to send
@@ -392,10 +399,10 @@ class Client(object):
         :param image: path to the local image to send
         """
         if not thread_fbid: 
-            if not self.thread_fbid: raise ValueError("thread_fbid not given")
+            if not self.thread_fbid: raise ValueError("thread_id not given")
             thread_fbid = self.thread_fbid
 
-        return self.sendLocalImage(message, thread_fbid, like, image, True)
+        return self.sendLocalImage(thread_fbid, message, like, image, True)
 
     def uploadImage(self, image):
         """Upload the image and get the image_id for sending in a message
@@ -431,6 +438,7 @@ class Client(object):
         j = get_json(r.text)
         if not j['payload']:
             return None
+
 
         messages = []
         for message in j['payload']['actions']:
@@ -522,10 +530,8 @@ class Client(object):
         return r.ok
 
     def markAsRead(self, userID):
-        data = {
-            "watermarkTimestamp": now(),
-            "shouldSendReadReceipt": True
-        }
+        data = { "watermarkTimestamp": now(),
+                 "shouldSendReadReceipt": True }
         data["ids[%s]"%userID] = True
         r = self._post(ReadStatusURL, data)
         return r.ok
@@ -551,10 +557,10 @@ class Client(object):
 
 
     def _getSticky(self):
-        '''
+        """
         Call pull api to get sticky and pool parameter,
         newer api needs these parameter to work.
-        '''
+        """
 
         data = {
             "msgs_recv": 0,
@@ -574,9 +580,9 @@ class Client(object):
 
 
     def _pullMessage(self, sticky, pool):
-        '''
+        """
         Call pull api with seq value to get message data.
-        '''
+        """
 
         data = {
             "msgs_recv": 0,
@@ -593,87 +599,159 @@ class Client(object):
 
 
     def _parseMessage(self, content):
-        '''
+        """
         Get message and author name from content.
         May contains multiple messages in the content.
-        '''
+        """
 
         if 'ms' not in content: return
-        for m in content['ms']:
+        for msg in content['ms']:
             try:
-                if m['type'] in ['m_messaging', 'messaging']:
-                    if m['event'] in ['deliver']:
-                        mid =     m['message']['mid']
-                        message = m['message']['body']
-                        fbid =    m['message']['sender_fbid']
-                        name =    m['message']['sender_name']
-                        self.on_message(mid, fbid, name, message, m)
-                elif m['type'] in ['typ']:
-                    self.on_typing(m.get("from"), metadata = m)
-                elif m['type'] in ['m_read_receipt']:
-                    self.on_read(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
-                elif m['type'] in ['inbox']:
-                    viewer = m.get('realtime_viewer_fbid')
-                    unseen = m.get('unseen')
-                    unread = m.get('unread')
-                    other_unseen = m.get('other_unseen')
-                    other_unread = m.get('other_unread')
-                    timestamp = m.get('seen_timestamp')
+                # Main things happen in here
+                if msg['type'] in ['delta']:
+                    delta = msg['delta']
+
+                    if delta['class'] in ['ForcedFetch', 'MarkUnread']: return
+
+                    if 'messageMetadata' in delta:
+                        author_id = delta['messageMetadata']['actorFbId']
+                        message_id = delta['messageMetadata']['messageId']
+                        thread_fbid = delta['messageMetadata']['threadKey'].get('threadFbId', None)
+                    else:
+                        thread_key = delta.get('threadKey', None)
+                        if not thread_key: delta.get('threadKeys', None)
+
+                        if thread_key:
+                            if 'otherUserFbId' in thread_key:
+                                author_id = thread_key['otherUserFbId']
+                                thread_fbid = None
+                            author_id = delta['actorFbId']
+                            thread_fbid = thread_key.get('threadFbId', None)
+                        else: return # whatever I have more stuff to do than getting author_id
+
+                    # New message received
+                    if delta['class'] == 'NewMessage':
+                        message = delta.get('body', '')
+                        attachments = delta.get('attachments', '')
+                        
+                        if thread_fbid:
+                            self.on_group_message(thread_fbid, author_id, message, attachments, message_id, delta)
+                        else:
+                            self.on_message(author_id, message, attachments, message_id, delta)
+
+                    # Seen
+                    elif delta['class'] == 'ReadReceipt':
+                        seen_time = delta['actionTimestampMs']
+
+                        if thread_fbid:
+                            self.on_group_seen(thread_fbid, author_id, seen_time, delta)
+                        else:
+                            self.on_seen(author_id, seen_time, delta)
+
+                    # Added to group
+                    elif delta['class'] == 'ParticipantsAddedToGroupThread':
+                        added_list = delta['addedParticipants']
+                        self.on_group_added(thread_fbid, author_id, added_list, delta)
+
+                    # Left the group
+                    elif delta['class'] == 'ParticipantLeftGroupThread':
+                        leaver_fbid = delta['leftParticipantFbId']
+                        self.on_group_left(thread_fbid, author_id, leaver_fbid, delta)
+
+                    # Changed title
+                    elif delta['class'] == 'ThreadName':
+                        new_title = delta['name']
+                        self.on_group_titleChanged(thread_fbid, author_id, new_title, delta)
+
+                    # Changed emoji
+                    elif delta['type'] == 'change_thread_icon':
+                        new_emoji = delta['untypedData']['thread_icon']
+                            
+                        if thread_fbid:
+                            self.on_group_emojiChanged(thread_fbid, author_id, new_emoji, delta)
+                        else:
+                            self.on_emojiChanged(author_id, new_emoji, delta)
+
+                    # Changed chat color
+                    elif delta['type'] == 'change_thread_theme':
+                        new_color = delta['untypedData']['theme_color']
+                            
+                        if thread_fbid:
+                            self.on_group_colorChanged(thread_fbid, author_id, new_color, delta)
+                        else:
+                            self.on_colorChanged(author_id, new_color, delta)
+
+                    # Changed nickname
+                    elif delta['type'] == 'change_thread_nickname':
+                        changed_fbid = delta['untypedData']['participant_id']
+                        new_nickname = delta['untypedData']['nickname']
+                            
+                        if thread_fbid:
+                            self.on_group_nicknameChanged(thread_fbid, author_id, changed_fbid, new_nickname, delta)
+                        else:
+                            self.on_nicknameChanged(author_id, changed_fbid, new_nickname, delta)
+
+                    # Message delivered
+                    elif delta['class'] == 'DeliveryReceipt':
+                        time_delivered = delta['deliveredWatermarkTimestampMs']
+                            
+                        if thread_fbid:
+                            self.on_group_messageDelivered(thread_fbid, author_id, time_delivered, delta)
+                        else:
+                            self.on_messageDelivered(author_id, time_delivered, delta)
+
+
+                # Private message typing
+                elif msg['type'] in ['typ']:
+                    author_id = msg["from"]
+
+                    if msg["st"] == 1:
+                        self.on_typing(author_id, msg)
+                    if msg["st"] == 0:
+                        self.on_typing_stopped(author_id, msg)
+
+                # Group chat typing
+                elif msg['type'] == "ttyp":
+                    thread_fbid = msg["thread"]
+                    author_id = msg["from"]
+                    
+                    if msg["st"] == 1:
+                        self.on_group_typing(thread_fbid, author_id, msg)
+                    if msg["st"] == 0:
+                        self.on_group_typing_stopped(thread_fbid, author_id, msg)
+
+
+                elif msg['type'] in ['m_read_receipt']:
+                    self.on_seen(msg.get('realtime_viewer_fbid'), msg.get('reader'), msg.get('time'))
+
+                elif msg['type'] in ['inbox']:
+                    viewer = msg.get('realtime_viewer_fbid')
+                    unseen = msg.get('unseen')
+                    unread = msg.get('unread')
+                    other_unseen = msg.get('other_unseen')
+                    other_unread = msg.get('other_unread')
+                    timestamp = msg.get('seen_timestamp')
                     self.on_inbox(viewer, unseen, unread, other_unseen, other_unread, timestamp)
-                elif m['type'] in ['qprimer']:
-                    self.on_qprimer(m.get('made'))
-                # Message received
-                elif m['type'] in ['delta']:
-                    if 'messageMetadata' in m['delta']:
-                        message = m['delta'].get('body','')
-                        attachments = m['delta'].get('attachments','')
-                        mid =     m['delta']['messageMetadata']['messageId']
-                        fbid =    m['delta']['messageMetadata']['actorFbId']
-                        name =    None
-                        if 'threadKey' in m['delta']['messageMetadata']:
-                            # Group message received
-                            if 'threadFbId' in m['delta']['messageMetadata']['threadKey']:
-                                thread_fbid = m['delta']['messageMetadata']['threadKey']['threadFbId']
-                                self.on_message_group(mid, fbid, thread_fbid, message, m)
-                            else:
-                                self.on_message(mid, fbid, name, message, m)
-                # Someone is typing a group
-                elif m['type'] == "ttyp":
-                    thread_fbid = m["thread_fbid"]
-                    fbid = m["thread_fbid"]
-                    self.on_typing(fbid, thread_fbid)
+
                 # Have no idea what is this
-                elif m['type'] == "deltaflow":
-                    pass
+                elif msg['type'] in ['qprimer', 'deltaflow']:
+                    return
+
+                # Probably never used anymore?
+                elif msg['type'] in ['m_messaging', 'messaging']:
+                    if msg['event'] in ['deliver']:
+                        mid =     msg['message']['mid']
+                        message = msg['message']['body']
+                        author_id =    msg['message']['sender_fbid']
+                        name =    msg['message']['sender_name']
+                        #self.on_message(mid, author_id, message, msg)
                 else:
                     if self.debug:
-                        self.log(m)
+                        self.log(msg)
             except Exception as e:
                 # ex_type, ex, tb = sys.exc_info()
-                self.on_message_error(sys.exc_info(), m)
+                self.on_message_error(sys.exc_info(), msg)
 
-
-    def listen(self, markAlive = True):
-        self.listening = True
-        sticky, pool = self._getSticky()
-
-        if self.debug:
-            self.log("Listening...")
-        
-        self.on_listening()
-
-        while self.listening:
-            try:
-                if markAlive: self.ping(sticky)
-                try:
-                    content = self._pullMessage(sticky, pool)
-                    if content: self._parseMessage(content)
-                except requests.exceptions.RequestException as e:
-                    continue
-            except KeyboardInterrupt:
-                break
-            except requests.exceptions.Timeout:
-              pass
 
     def getUserInfo(self, user_ids):
         """Get user info from id. Unordered.
@@ -692,61 +770,104 @@ class Client(object):
 
     
     def on_login(self):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
         pass
 
     def on_listening(self):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        pass
+
+
+    def on_group_message(self, thread_fbid, author_id, message, attachements, mid, metadata):
+        self.markAsDelivered(author_id, mid)
+        self.markAsRead(author_id)
+
+    def on_message(self, author_id, message, attachements, mid, metadata):
+        self.markAsDelivered(author_id, mid)
+        self.markAsRead(author_id)
+        
+        
+    def on_group_typing(self, thread_fbid, author_id, metadata):
+        self.log("%s typing in %s" % (author_id, thread_fbid))
+        pass
+
+    def on_typing(self, author_id, metadata):
+        self.log("%s typing" % (author_id))
+        pass
+
+
+    def on_group_typing_stopped(self, thread_fbid, author_id, metadata):
+        self.log("%s stopped typing in %s" % (author_id, thread_fbid))
+        pass
+
+    def on_typing_stopped(self, author_id, metadata):
+        self.log("%s stopped typing" % (author_id))
+        pass
+
+
+    def on_group_seen(self, thread_fbid, author_id, time_seen, metadata):
+        self.log("%s seen in %s at %s" % (author_id, thread_fbid, time_seen))
+        pass
+
+    def on_seen(self, author_id, time_seen, metadata):
+        self.log("%s seen in at %s" % (author_id, time_seen))
+        pass
+
+    def on_group_nicknameChanged(self, thread_fbid, author_id, changed_fbid, new_nickname, delta):
+        self.log("%s changed nickname of %s to %s in %s" % (author_id, changed_fbid, new_nickname, thread_fbid))
+        pass
+
+    def on_nicknameChanged(self, author_id, changed_fbid, new_nickname, delta):
+        self.log("%s changed nickname of %s to %s" % (author_id, changed_fbid, new_nickname))
         pass
     
-    def on_message(self, mid, author_id, author_name, message, metadata):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
-        self.markAsDelivered(author_id, mid)
-        self.markAsRead(author_id)
-        self.log("%s said: %s" % (author_name, message))
 
-    def on_message_group(self, mid, author_id, thread_fbid, message, metadata):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
-        self.markAsDelivered(author_id, mid)
-        self.markAsRead(author_id)
-        self.log("%s said in %s: %s" % (author_name, thread_fbid, message))
+    def on_group_emojiChanged(self, thread_fbid, author_id, new_emoji, delta):
+        self.log("%s changed emoji of %s to %s" % (author_id, thread_fbid, new_emoji))
+        pass
 
-
-    def on_typing(self, author_id, thread_fbid = None, metadata = None):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+    def on_emojiChanged(self, author_id, new_emoji, delta):
+        self.log("%s changed emoji to %s" % (author_id, new_emoji))
         pass
 
 
-    def on_read(self, author, reader, time):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+    def on_group_colorChanged(self, thread_fbid, author_id, new_color, delta):
+        self.log("%s changed color of %s to %s" % (author_id, thread_fbid, new_color))
+        pass
+
+    def on_colorChanged(self, author_id, new_color, delta):
+        self.log("%s changed color to %s" % (author_id, new_color))
+        pass
+    
+
+    def on_group_messageDelivered(self, thread_fbid, author_id, time_delivered, delta):
+        self.log("Message delivered to %s in %s at %s" % (author_id, thread_fbid, time_delivered))
+        pass
+
+    def on_messageDelivered(self, author_id, time_delivered, delta):
+        self.log("Message delivered to %s at %s" % (author_id, time_delivered))
+        pass
+
+
+    def on_group_added(self, thread_fbid, author_id, added_list, metadata):
+        self.log("%s added %s people to %s" % (author_id, str(len(added_list)), thread_fbid))
+        pass
+
+    def on_group_left(self, thread_fbid, author_id, leaver_fbid, metadata):
+        self.log("%s removed %s from %s" % (author_id, leaver_fbid, thread_fbid))
+        pass
+
+    def on_group_titleChanged(self, thread_fbid, author_id, new_title, delta):
+        self.log("%s changed title of %s to %s" % (author_id, thread_fbid, new_title))
         pass
 
 
     def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
-        '''
+        """
         subclass Client and override this method to add custom behavior on event
-        '''
+        """
         pass
-
 
     def on_message_error(self, exception, message):
-        '''
+        """
         subclass Client and override this method to add custom behavior on event
-        '''
+        """
         self.log("Exception: " + str(exception))
-
-
-    def on_qprimer(self, timestamp):
-        pass
