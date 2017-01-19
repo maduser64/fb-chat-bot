@@ -1,4 +1,8 @@
-﻿import threading
+﻿from lxml import html
+from lxml.cssselect import CSSSelector
+from urllib import request
+import requests
+import threading
 import sys
 import json
 import ctypes
@@ -9,6 +13,7 @@ import re
 import time
 import calendar
 import io
+import urllib
 
 from fbchat.models import Like
 import stats
@@ -282,6 +287,91 @@ class ArnoldBot(fbchat.Client):
     ### Commands
     ############
 
+    
+    def cmd_weather(self, author_id, command, args):
+        try:
+            date = time.strftime("%Y%m%d", time.localtime())
+            # Vilnius
+            page = requests.get("http://www.meteo.lt/lt_LT/miestas?placeCode=Vilnius")
+            tree = html.fromstring(page.content)
+            td = tree.cssselect("div.weather_info.type_1")[0]
+            td_temp_vln = td.cssselect("span.temperature")[0].text
+            td_type_vln = td.cssselect("span.large.condition")[0].get("title").lower()
+
+            tmrw = tree.cssselect("div.portlet-body div.weather_block_city div.slider")[0].getchildren()[1]
+            tmrw = tmrw.cssselect("a")[0].getchildren()
+            tmrw_night_temp_vln = tmrw[2][2].text[:-3]
+            tmrw_night_type_vln = tmrw[2][1].get("title").lower()
+            tmrw_day_temp_vln = tmrw[3][2].text[:-3]
+            tmrw_day_type_vln = tmrw[3][1].get("title").lower()
+
+            # Kaunas
+            page = requests.get("http://www.meteo.lt/lt_LT/miestas?placeCode=Kaunas")
+            tree = html.fromstring(page.content)
+            td = tree.cssselect("div.weather_info.type_1")[0]
+            td_temp_kns = td.cssselect("span.temperature")[0].text
+            td_type_kns = td.cssselect("span.large.condition")[0].get("title").lower()
+
+            tmrw = tree.cssselect("div.portlet-body div.weather_block_city div.slider")[0].getchildren()[1]
+            tmrw = tmrw.cssselect("a")[0].getchildren()
+            tmrw_night_temp_kns = tmrw[2][2].text[:-3]
+            tmrw_night_type_kns = tmrw[2][1].get("title").lower()
+            tmrw_day_temp_kns = tmrw[3][2].text[:-3]
+            tmrw_day_type_kns = tmrw[3][1].get("title").lower()
+
+            # Panevėžys
+            page = requests.get("http://www.meteo.lt/lt_LT/miestas?placeCode=Panevezys")
+            tree = html.fromstring(page.content)
+            td = tree.cssselect("div.weather_info.type_1")[0]
+            td_temp_pnvz = td.cssselect("span.temperature")[0].text
+            td_type_pnvz = td.cssselect("span.large.condition")[0].get("title").lower()
+
+            tmrw = tree.cssselect("div.portlet-body div.weather_block_city div.slider")[0].getchildren()[1]
+            tmrw = tmrw.cssselect("a")[0].getchildren()
+            tmrw_night_temp_pnvz = tmrw[2][2].text[:-3]
+            tmrw_night_type_pnvz = tmrw[2][1].get("title").lower()
+            tmrw_day_temp_pnvz = tmrw[3][2].text[:-3]
+            tmrw_day_type_pnvz = tmrw[3][1].get("title").lower()
+            
+            msg = command["txt_executed"] % ("Vilniuje", td_temp_vln, td_type_vln,\
+                tmrw_day_temp_vln, tmrw_day_type_vln, tmrw_night_temp_vln, tmrw_night_type_vln) + "\n\n"
+            msg += command["txt_executed"] % ("Kaune", td_temp_kns, td_type_kns,\
+                tmrw_day_temp_kns, tmrw_day_type_kns, tmrw_night_temp_kns, tmrw_night_type_kns) + "\n\n"
+            msg += command["txt_executed"] % ("Panevėžyje", td_temp_pnvz, td_type_pnvz,\
+                tmrw_day_temp_pnvz, tmrw_day_type_pnvz, tmrw_night_temp_pnvz, tmrw_night_type_pnvz)
+
+            self.group_send(msg)
+            pass
+        except:
+            self.command_log_error()
+
+
+    def cmd_wikipedia(self, author_id, command, args):
+        try:
+            if args == None: raise Exception
+            
+            args = args.replace(" ", "_")
+            url = "https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro=&explaintext=&titles="
+            url += args
+
+            response = json.load(urllib.request.urlopen(url))
+
+            extract = response["query"]["pages"]
+
+            # Page not found
+            if "-1" in extract:
+                self.group_send(command["txt_error"])
+                return
+            extract = next(iter(extract.values()))
+
+            url_to_add = "https://en.wikipedia.org/wiki/" + args
+            msg = extract["extract"] + "\n" + url_to_add
+            
+            self.group_send(msg)
+        except:
+            self.command_log_error()
+
+
     def cmd_unfair_roll(self, author_id, command, args):
         try:
             unfair_list = []
@@ -289,7 +379,7 @@ class ArnoldBot(fbchat.Client):
                 unfair_list += [key] * int(value)
 
             msg = random.choice(unfair_list)
-            self.group_send(msg)
+            self.group_send(msg, like = Like.small)
 
 
         except:
