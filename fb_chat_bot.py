@@ -52,30 +52,7 @@ class ArnoldBot(fbchat.Client):
         self.__quiz_question_count = 0
         self.__quiz_timeout_set = False
         self.__quiz_timer = None
-
-    def fbidToName(self, fbid):
-        for user in self.full_users:
-            if user["id"] == fbid:
-                return user["firstName"]
-
-    def nameToFbid(self, name):
-        for user in self.full_users:
-            if user["firstName"].lower() == name:
-                return user["id"]
-
-    def fbidToNameCode(self, fbid):
-        for user in self.full_users:
-            if user["id"] == fbid:
-                return user["firstName"] + fbid[-3:]
-
-    def nameCodeToFbid(self, name_code):
-        for user in self.full_users:
-            if user["id"][-3:] == name_code[-3:] and user["firstName"] == user["id"][:-3]:
-                return user["id"]
-
-    def nameToNameCode(self, name):
-        return self.fbidToNameCode(self.nameToFbid(name))
-
+        
     def on_message(self, author_id, message, attachements, mid, metadata):
         self.markAsDelivered(author_id, mid)  # mark delivered
         self.markAsRead(author_id)  # mark read
@@ -122,15 +99,7 @@ class ArnoldBot(fbchat.Client):
 
             # Quiz in progress
             elif self.__quiz_timeout_set:
-                self.quiz_guess(author_id, message)
-
-            # Responds to stuff in text
-            else:
-                # Listens to specific things people say
-                # Augis
-                if self.fbidToName(author_id) == "Augustas":
-                    if re.match(r"\bu+g+h+\b", message.lower()) != None:
-                        self.group_send("Neužpisk su tuo jobanu ugh, kurva.")
+                self.quizGuess(author_id, message)
 
             self.global_responder(message.lower(), author_id)
 
@@ -141,7 +110,9 @@ class ArnoldBot(fbchat.Client):
             # !onseen command
             for item in self.onseen_list:
                 if author_id == item["to_id"]:
-                    msg = self.commands["onseen"]["txt_onseen"] % (item["from"][:-3], item["text"])
+                    addressing_name = self.getAddressingName(self.fbidToNameCode(author_id))
+                    from_nickname = self.getNickname(self.fbidToNameCode(author_id))
+                    msg = self.commands["onseen"]["txt_onseen"] % (addressing_name, from_nickname, item["text"])
                     self.group_send(msg)
                     self.onseen_list.remove(item)
                     self.stats.makeDirty()
@@ -155,11 +126,7 @@ class ArnoldBot(fbchat.Client):
                     return self.commands[command[0]]
         except:
             return None
-
-    def is_operator(self, fbid):
-        """Returns if given FBID is chatroom operator"""
-        return fbid in config["oper_fbid_list"]
-
+        
     def global_responder(self, message, author_id):
         """Responds, if there are words that match trigger words regex"""
 
@@ -168,10 +135,18 @@ class ArnoldBot(fbchat.Client):
         message = message.lower()
         # If there are more than few matched lists, stores them
         for i, item in enumerate(items):
+            # If user list is not empty checks if message is from given user
+            # Doesn't find the author so goes to another set
+            if item["for_users"] and self.fbidToNameCode(author_id) not in item["for_users"]:
+                continue
+
             for word in item["triggers"]:
+                # Check if only for specific users
                 if re.search(word, message):
                     matches_lists.append(i)
                     break
+
+
         # There are triggers
         if len(matches_lists) > 0:
             rnd = random.randint(1, len(matches_lists)) - 1
@@ -186,6 +161,7 @@ class ArnoldBot(fbchat.Client):
             self.group_send(response)
 
     def annoy(self, author_id):
+        """If person from annoy list writes a message - responds"""
         for item in self.annoy_list:
             if author_id == item["fbid"]:
                 if item["count"] > 0:
@@ -226,6 +202,7 @@ class ArnoldBot(fbchat.Client):
         self.group_send(config["on_login"])
 
     def quizRevealLetter(self, timer):
+        """Reveals letter for quiz if answers are accepted and restarts timer"""
         if self.mquiz.acceptsAnswer():
             if self.mquiz.revealLetter():
                 # Restarts timer
@@ -241,12 +218,8 @@ class ArnoldBot(fbchat.Client):
                 msg = self.commands["quiz"]["timeout_text"] % self.mquiz.getAnswer()
                 self.group_send(msg)
 
-                # More questions
-
-                if self.__quiz_question_count > 0:
-                    quizGiveQuestion(self.__quiz_question_count)
-
     def quizGiveQuestion(self):
+        """Gives quiz question and sets a timer to reveal letters"""
         self.group_send("%s\n\n%s" % (self.mquiz.getQuestion(), self.mquiz.getHiddenAnswer()))
 
         if not self.__quiz_timeout_set:
@@ -256,7 +229,8 @@ class ArnoldBot(fbchat.Client):
             self.__quiz_timer.start()
             self.__quiz_timeout_set = True
 
-    def quiz_guess(self, author_id, message):
+    def quizGuess(self, author_id, message):
+        """Makes a quiz guess and shows new question if guess is correct"""
         # Might be an answer but answers are not accepted
         if self.mquiz.acceptsAnswer():
             points = self.mquiz.guessAnswer(self.fbidToNameCode(author_id), message)
@@ -286,9 +260,42 @@ class ArnoldBot(fbchat.Client):
     ############
     ### Commands
     ############
-
     
+    def cmd_add_addressing_name(self, author_id, command, args):
+        """Adds addressing name to user who calls it"""
+        try:
+            if not args: raise Exception
+
+            user = self.config[consts.Config.USERS][self.fbidToNameCode(author_id)]
+            user[consts.User.ADDRESSING_NAMES].append(args)
+
+            with open(CONFIG_FILE, "w", encoding = "utf-8") as outfile:
+                json.dump(self.config, outfile, indent = "\t", ensure_ascii = False)
+
+            self.group_send(command[consts.Cmd.TXT_EXECUTED] % args)
+
+        except:
+            self.command_log_error()
+
+    def cmd_add_nickname(self, author_id, command, args):
+        """Adds nickname to user who calls it"""
+        try:
+            if not args: raise Exception
+
+            user = self.config[consts.Config.USERS][self.fbidToNameCode(author_id)]
+            user[consts.User.NICKNAMES].append(args)
+
+            with open(CONFIG_FILE, "w", encoding = "utf-8") as outfile:
+                json.dump(self.config, outfile, indent = "\t", ensure_ascii = False)
+
+            self.group_send(command[consts.Cmd.TXT_EXECUTED] % args)
+
+        except:
+            self.command_log_error()
+
+
     def cmd_weather(self, author_id, command, args):
+        """Shows weather by scraping my local weather site"""
         try:
             date = time.strftime("%Y%m%d", time.localtime())
             # Vilnius
@@ -296,13 +303,16 @@ class ArnoldBot(fbchat.Client):
             tree = html.fromstring(page.content)
             td = tree.cssselect("div.weather_info.type_1")[0]
             td_temp_vln = td.cssselect("span.temperature")[0].text
+            if int(td_temp_vln) > 0: td_temp_vln = "+" + td_temp_vln
             td_type_vln = td.cssselect("span.large.condition")[0].get("title").lower()
 
             tmrw = tree.cssselect("div.portlet-body div.weather_block_city div.slider")[0].getchildren()[1]
             tmrw = tmrw.cssselect("a")[0].getchildren()
             tmrw_night_temp_vln = tmrw[2][2].text[:-3]
+            if int(tmrw_night_temp_vln) > 0: tmrw_night_temp_vln = "+" + tmrw_night_temp_vln
             tmrw_night_type_vln = tmrw[2][1].get("title").lower()
             tmrw_day_temp_vln = tmrw[3][2].text[:-3]
+            if int(tmrw_day_temp_vln) > 0: tmrw_day_temp_vln = "+" + tmrw_day_temp_vln
             tmrw_day_type_vln = tmrw[3][1].get("title").lower()
 
             # Kaunas
@@ -310,13 +320,16 @@ class ArnoldBot(fbchat.Client):
             tree = html.fromstring(page.content)
             td = tree.cssselect("div.weather_info.type_1")[0]
             td_temp_kns = td.cssselect("span.temperature")[0].text
+            if int(td_temp_kns) > 0: td_temp_kns = "+" + td_temp_kns
             td_type_kns = td.cssselect("span.large.condition")[0].get("title").lower()
 
             tmrw = tree.cssselect("div.portlet-body div.weather_block_city div.slider")[0].getchildren()[1]
             tmrw = tmrw.cssselect("a")[0].getchildren()
             tmrw_night_temp_kns = tmrw[2][2].text[:-3]
+            if int(tmrw_night_temp_kns) > 0: tmrw_night_temp_kns = "+" + tmrw_night_temp_kns
             tmrw_night_type_kns = tmrw[2][1].get("title").lower()
             tmrw_day_temp_kns = tmrw[3][2].text[:-3]
+            if int(tmrw_day_temp_kns) > 0: tmrw_day_temp_kns = "+" + tmrw_day_temp_kns
             tmrw_day_type_kns = tmrw[3][1].get("title").lower()
 
             # Panevėžys
@@ -324,13 +337,16 @@ class ArnoldBot(fbchat.Client):
             tree = html.fromstring(page.content)
             td = tree.cssselect("div.weather_info.type_1")[0]
             td_temp_pnvz = td.cssselect("span.temperature")[0].text
+            if int(td_temp_pnvz) > 0: td_temp_pnvz = "+" + td_temp_pnvz
             td_type_pnvz = td.cssselect("span.large.condition")[0].get("title").lower()
 
             tmrw = tree.cssselect("div.portlet-body div.weather_block_city div.slider")[0].getchildren()[1]
             tmrw = tmrw.cssselect("a")[0].getchildren()
             tmrw_night_temp_pnvz = tmrw[2][2].text[:-3]
+            if int(tmrw_night_temp_pnvz) > 0: tmrw_night_temp_pnvz = "+" + tmrw_night_temp_pnvz
             tmrw_night_type_pnvz = tmrw[2][1].get("title").lower()
             tmrw_day_temp_pnvz = tmrw[3][2].text[:-3]
+            if int(tmrw_day_temp_pnvz) > 0: tmrw_day_temp_pnvz = "+" + tmrw_day_temp_pnvz
             tmrw_day_type_pnvz = tmrw[3][1].get("title").lower()
             
             msg = command["txt_executed"] % ("Vilniuje", td_temp_vln, td_type_vln,\
@@ -346,7 +362,48 @@ class ArnoldBot(fbchat.Client):
             self.command_log_error()
 
 
+    def cmd_urban_dict(self, author_id, command, args):
+        """Shows urban dictionary entry"""
+        try:
+            if args == None: raise Exception
+            
+            # Number of defitinios
+            count = 1
+            if re.match(r"\s\d", args[-2:]):
+                count = int(args[-1])
+
+            args = args[:-2].replace(" ", "+")
+            url = "http://api.urbandictionary.com/v0/define?term="
+            url += args
+
+            response = json.load(urllib.request.urlopen(url))
+
+
+            # Page not found
+            if response["result_type"] == "no_results":
+                self.group_send(command["txt_error"])
+                return
+
+            if count < 1: count = 1
+            if count > len(response["list"]): count = len(response["list"])
+
+            msg = ""
+            for i in range(count):
+                result = response["list"][i]
+                word = result["word"]
+                definition = result["definition"]
+                example = result["example"]
+
+                msg += command[consts.Cmd.TXT_EXECUTED] % ((i + 1), word, definition, example)
+            
+            msg += response["list"][0]["permalink"]
+            self.group_send(msg)
+        except:
+            self.command_log_error()
+
+
     def cmd_wikipedia(self, author_id, command, args):
+        """Shows extract from wikipedia"""
         try:
             if args == None: raise Exception
             
@@ -373,6 +430,7 @@ class ArnoldBot(fbchat.Client):
 
 
     def cmd_unfair_roll(self, author_id, command, args):
+        """The person being played doesn't know lol"""
         try:
             unfair_list = []
             for key, value in command["rolls"].items():
@@ -387,6 +445,7 @@ class ArnoldBot(fbchat.Client):
 
 
     def cmd_onseen(self, author_id, command, args):
+        """Writes a message when person opens up chat"""
         try:
             args = args.split(" ", 1)
             if len(args) != 2: raise Exception
@@ -427,6 +486,7 @@ class ArnoldBot(fbchat.Client):
             self.command_log_error()
 
     def cmd_quiz(self, author_id, command, args):
+        """Trivia game"""
         # Quiz config entry
         name_code = self.fbidToNameCode(author_id)
 
@@ -479,11 +539,12 @@ class ArnoldBot(fbchat.Client):
                     break
             # Command not found, it is a guess
             else:
-                self.quiz_guess(author_id, " ".join(args))
+                self.quizGuess(author_id, " ".join(args))
         except Exception as e:
             self.command_log_error(str(e))
 
     def cmd_annoy(self, author_id, command, args):
+        """Writes a message after the person to be annoyed writes"""
         try:
             args = args.split(" ", 2)
             if len(args) != 3: raise Exception
@@ -507,6 +568,7 @@ class ArnoldBot(fbchat.Client):
             self.command_log_error()
 
     def cmd_unannoy(self, author_id, command, args):
+        """Removes author from annoy list"""
         for item in self.annoy_list:
             if item["fbid"] == author_id:
                 self.command_log(command[consts.Cmd.NAME])
@@ -515,6 +577,7 @@ class ArnoldBot(fbchat.Client):
                 break;
 
     def cmd_say(self, author_id, command, args):
+        """Repeats what user said"""
         if args:
             self.command_log(command[consts.Cmd.NAME], args)
             self.group_send(args)
@@ -523,6 +586,7 @@ class ArnoldBot(fbchat.Client):
             self.group_send(command[consts.Cmd.TXT_ARGS_ERROR])
 
     def cmd_updateconfig(self, author_id, command, args):
+        """Updates config with new values"""
         try:
             with open(CONFIG_FILE, encoding = "utf-8") as infile:
                 new_config = json.load(infile)
@@ -534,6 +598,7 @@ class ArnoldBot(fbchat.Client):
             self.command_log_error()
 
     def cmd_savestats(self, author_id, command, args):
+        """Force saves all stats"""
         try:
             self.stats.updateCommandsExecuted(self.fbidToNameCode(author_id), command[consts.Cmd.NAME])
             self.stats.updateStats()
@@ -543,12 +608,9 @@ class ArnoldBot(fbchat.Client):
             self.group_send(e)
             self.command_log_error()
 
-    def cmd_roll(self, author_id, command, args):
-        pass
-        #self.command_log(command[consts.Cmd.NAME])
-        #self.group_send(message)
 
     def cmd_time(self, author_id, command, args):
+        """Displays current time"""
         self.command_log(command[consts.Cmd.NAME])
 
         now = time.time()
@@ -563,6 +625,132 @@ class ArnoldBot(fbchat.Client):
         msg += cal
 
         self.group_send(msg)
+        
+        
+    def cmd_save_user_list(self, author_id, command, args):
+        """Saves current users to config"""
+        try:
+            threads = self.getThreadList(0)
+            for item in threads:
+                if item.thread_fbid == self.thread_fbid:
+                    thread = item
+
+            # Extracts ids from participants and gets full data
+            users = []
+            for user_id in thread.participants:
+                if user_id.startswith("fbid:"):
+                    users.append(user_id[5:])
+            self.full_users = self.getUserInfo(users)
+
+            added = 0
+            marked_in_chat = 0
+            for user in self.full_users:
+                name_code = self.fbidToNameCode(user["id"])
+                # User is not in config
+                if name_code not in self.config[consts.Config.USERS]:
+                    new_user = {
+                        consts.User.ID: user["id"],
+                        consts.User.NAME: user["firstName"],
+                        consts.User.FULL_NAME: user["name"],
+                        consts.User.GENDER: user["gender"],
+                        consts.User.URL: user["uri"],
+                        consts.User.IN_CHAT: True,
+                        consts.User.IS_FRIEND: user["is_friend"],
+                        consts.User.NICKNAMES: [],
+                        consts.User.ADDRESSING_NAMES: []}
+                    self.config[consts.Config.USERS][name_code] = new_user
+                    added += 1
+                # User is in config but was marked as not in chat
+                elif not self.config[consts.Config.USERS][name_code][consts.User.IN_CHAT]:
+                    self.config[consts.Config.USERS][name_code][consts.User.IN_CHAT] = True
+                    marked_in_chat += 1
+
+            # User is in config, but not in chat
+            marked_removed = 0
+            for key, val in self.config[consts.Config.USERS].items():
+                for user_in_chat in self.full_users:
+                    if val[consts.User.ID] == user_in_chat["id"]:
+                        break
+                else:
+                    user_in_config[consts.User.IN_CHAT] = False
+                    marked_removed += 1
+                    
+            with open(CONFIG_FILE, "w", encoding = "utf-8") as outfile:
+                json.dump(self.config, outfile, indent = "\t", ensure_ascii = False)
+            
+
+            self.group_send(command[consts.Cmd.TXT_EXECUTED] % (added, marked_in_chat, marked_removed))
+
+        except Exception as e:
+            self.group_send(e)
+            self.command_log_error()
+            
+
+    def cmd_help(self, author_id, command, args):
+        """Shows all available commands"""
+        try:
+            msg = command[consts.Cmd.TXT_EXECUTED]
+            sorted_list = sorted(self.commands.items(), key = lambda tup: tup[1][consts.Cmd.NAME])
+            for cmd in sorted_list:
+                if not cmd[1][consts.Cmd.IS_OPER]:
+                    msg += cmd[1][consts.Cmd.NAME]
+                    if cmd[1][consts.Cmd.SHORT] != "": msg += " (%s)" % cmd[1][consts.Cmd.SHORT]
+                    msg += " - " + cmd[1][consts.Cmd.INFO] + "\n"
+
+            self.group_send(msg)
+
+        except Exception as e:
+            self.group_send(e)
+            self.command_log_error()
+
+
+    def fbidToName(self, fbid):
+        for user in self.full_users:
+            if user["id"] == fbid:
+                return user["firstName"]
+
+    def nameToFbid(self, name):
+        for user in self.full_users:
+            if user["firstName"].lower() == name:
+                return user["id"]
+
+    def fbidToNameCode(self, fbid):
+        for user in self.full_users:
+            if user["id"] == fbid:
+                return user["firstName"] + fbid[-3:]
+
+    def nameCodeToFbid(self, name_code):
+        for user in self.full_users:
+            if user["id"][-3:] == name_code[-3:] and user["firstName"] == user["id"][:-3]:
+                return user["id"]
+    
+    def getAddressingName(self, name_code):
+        user = self.config[consts.Config.USERS].get(name_code, None)
+        if user:
+            addr_names = user[consts.User.ADDRESSING_NAMES]
+            if addr_names:
+                rnd = random.randint(0, len(addr_names) - 1)
+                return addr_names[rnd]
+            return user[consts.User.NAME]
+        return name_code
+
+    def getNickname(self, name_code):
+        user = self.config[consts.Config.USERS].get(name_code, None)
+        if user:
+            nicknames = user[consts.User.NICKNAMES]
+            if nicknames:
+                rnd = random.randint(0, len(nicknames) - 1)
+                return nicknames[rnd]
+            return user[consts.User.NAME]
+        return name_code
+
+
+    def nameToNameCode(self, name):
+        return self.fbidToNameCode(self.nameToFbid(name))
+
+    def is_operator(self, fbid):
+        """Returns if given FBID is chatroom operator"""
+        return fbid in config["oper_fbid_list"]
 
 
 # Config and stats files provided via argument

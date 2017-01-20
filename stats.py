@@ -42,7 +42,7 @@ class Stats:
         # Writes only if data is modified
         if self.__dirty:
             with open(self.stats_file, "w", encoding = "utf-8") as outfile:
-                json.dump(self.vals, outfile, indent = "\t")
+                json.dump(self.vals, outfile, indent = "\t", ensure_ascii = False)
             self.__dirty = False
 
     def updateCommandsExecuted(self, name_code, command):
