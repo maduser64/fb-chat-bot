@@ -24,6 +24,7 @@ class Stats:
             os.rename(stats_file + ".temp", stats_file)
         
         self.vals["times_launched"] += 1
+        self.vals["current_uptime"] = 0
         
         self.updateStats()
 
@@ -36,6 +37,7 @@ class Stats:
         dif = time.time() - self.last_update
         if dif >= 60:
             self.vals["uptime_minutes"] += 1
+            self.vals["current_uptime"] += 1
             self.__dirty = True
             self.last_update = time.time()
 

@@ -163,15 +163,19 @@ class Quiz():
 def unidecode(string):
     result = ""
     for i in string:
-        if i == 'ą': result += 'a'
-        elif i == 'č': result += 'c'
-        elif i == 'ę': result += 'e'
-        elif i == 'ė': result += 'e'
-        elif i == 'į': result += 'i'
-        elif i == 'š': result += 's'
-        elif i == 'ų': result += 'u'
-        elif i == 'ū': result += 'u'
-        elif i == 'ž': result += 'z'
-        else: result += i
+        was_upper = i.isupper()
+        i = i.lower()
+        if i == 'ą': i = 'a'
+        elif i == 'č': i = 'c'
+        elif i == 'ę': i = 'e'
+        elif i == 'ė': i = 'e'
+        elif i == 'į': i = 'i'
+        elif i == 'š': i = 's'
+        elif i == 'ų': i = 'u'
+        elif i == 'ū': i = 'u'
+        elif i == 'ž': i = 'z'
+        
+        if was_upper: i = i.upper()
+        result += i
 
     return result
