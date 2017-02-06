@@ -1,6 +1,8 @@
 # FB Chat Bot
 Everyone who has used IRC or Twitch or Discord knows about group bots. They're pretty cool. I wanted one for my group chat. I also wanted to learn at least a little bit of Python, see what's the hype about. And, well, here it is - a Python FB Chat Bot.
 
+![Here bot is in action](https://i.imgur.com/xqBM4Ks.png)
+
 Currently available commands:
 * `!addnickname [new_nickname]` - add a nickname to how bot calls you
 * `!addressingname [new_addressing_name]` - add a name to how bot addresses you
@@ -65,7 +67,9 @@ After this, create a method in `fb_chat_bot.py`:
             self.command_log_error()
 
 `author_id` - ID of the person who sent it. You can use `self.fbIdToName(id)` method to get the name of the person.
-`command` - all the fields of your command.
+
+`command` - all the fields of your command, so you access settings of it easier.
+
 `args` - everything that was written after command name as a string. In this example it would be some item name, otherwise an error message would be written.
 
 That's it. 
