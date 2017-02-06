@@ -1,10 +1,39 @@
 # FB Chat Bot
 Everyone who has used IRC or Twitch or Discord knows about group bots. They're pretty cool. I wanted one for my group chat. I also wanted to learn at least a little bit of Python, see what's the hype about. And, well, here it is - a Python FB Chat Bot.
 
-So far it's pretty basic it supports keeping track of stats and only has a few basic commands.
-The most interesting feature as of now is a game - quiz. Most importantly some infrastacture is laid there to make implementing new things very easy.
+Currently available commands:
+!addnickname [new_nickname]- add a nickname to how bot calls you
+!addressingname [new_addressing_name]- add a name to how bot addresses you
+!aesthetic [text] - converts text to aesthetic (full-width) text
+!annoy [name] [count] [text] - writes a message immediately after the person writes a message
+!help - shows help
+!on - shows if bot is online right now and for how long
+!onseen [name] [text] - writes a message to person, when he opens up chat
+!roll - rolls a number for given max value (inclusive)
+!roll1 - another type of roll
+!say [text] - bot repeats what you say
+!stats - displays chat stats
+!time - shows current time and date
+!urban [query] - shows Urban Dictionary definition
+!quiz (!q) query/more/mystats/allstats- a fun trivia game
+!weather - shows weather
+!wiki [query] - shows Wikipedia article extract
+
+Then there are admin commands:
+!addsimplecommand [cmd_name] [returned string]- adds a command, which only returns a prewritten string
+!savestats - forces bot to save current stats
+!updateconfig - forces bot to update fields from config file
+!saveuserlist - saves people currently in the chat
+
+## Making config file
+1. Enter the email and password of the account the bot will be running on.
+2. Enter `thread_id` you see in your address bar when that chat is opened, e.g. 13285268271687201
+3. Give your bot a name and enter the quiz file to read for questions (more on that later).
+4. To give yourself operator commands, enter your FB ID in `oper_fbid_list`.
+5. Enter what bot says when he logs in, when somebody writes non-existing command and when somebody tries to access OP command.
+
 
 ## How to use
-1. Create a FB account, join the group chat and copy `thread_id` which you see in address bar.
-2. Enter data into `config.json`. You can edit a lot of stuff through it.
-3. Launch `fb-chat-bot.py`.
+1. Start `fb_chat_bot.py`.
+2. ???
+3. Profit.

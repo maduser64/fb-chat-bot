@@ -1,0 +1,252 @@
+{
+	"email": "",
+	"password": "",
+	"thread_fbid": "",
+	"bot_name": "Arnold Bot",
+	"quiz_file": "quiz.txt",
+	"oper_fbid_list": [],
+	"on_login": "Hello all, I'm online",
+	"command_error": "I'm unable to comply.",
+	"command_error_oper": "I'm afraid I can't do that.",
+	"users": {},
+	"commands": {
+		"simple_commands": {
+			"cmd_name": "!addsimplecommand",
+			"cmd_short": "",
+			"info": "",
+			"entry_method": "cmd_simpleCommands",
+			"is_oper": true,
+			"txt_executed": "%s command added.",
+			"commands": {
+				"!whoareyou": [
+					"My name is Arnold. I was sent here from the future, thirty five years from now, by Dainius. I'm a cybernetic organism. Living tissue over a metal endoskeleton. Cyberdyne Systems Model 101. My mission is to serve this chat."
+				]
+			}
+		},
+		"quiz": {
+			"cmd_name": "!quiz",
+			"cmd_short": "!q",
+			"info": "a fun trivia game",
+			"entry_method": "cmd_quiz",
+			"txt_executed": "",
+			"is_oper": false,
+			"args": {
+				"help": "help",
+				"repeat_question": "question",
+				"get_question": "more",
+				"user_stats": "mystats",
+				"global_stats": "allstats",
+				"top_3": "top"
+			},
+			"help": "A quiz game. Write '!q more' to get more questions; '!q question' to repeat the question, '!q allstats' and '!q mystats' to see stats.",
+			"question_max_at_time": 5,
+			"timeout": 30,
+			"timeout_text": "Answer was: %s",
+			"guess_wrong": "Wrong.",
+			"guess_correct": "Correct! %s got %s points.",
+			"top_text": "Geriausi:\n\n",
+			"top_position_text": "%s. %s - %s t.\n",
+			"user_not_played": "You still haven't played...",
+			"user_stats_text": "{name} stats:\n\nPoints:{points}\nAnswered questions: {total_answered}, {last_answered}.\nLongest combo: {combo}. Nice.",
+			"global_stats_text": "Global stats:\n\nQuestions given: {total_questions}\nAnswered questions: {total_answered}\n."
+		},
+		"fullwidth-converter": {
+			"cmd_name": "!aesthetic",
+			"cmd_short": "",
+			"info": "converts text to aesthetic (full-width) text",
+			"entry_method": "cmd_fullwidth",
+			"is_oper": false,
+			"txt_executed": "",
+			"txt_error": ""
+		},
+		"stats": {
+			"cmd_name": "!stats",
+			"cmd_short": "",
+			"info": "displays chat stats",
+			"entry_method": "cmd_stats",
+			"is_oper": false,
+			"txt_executed": "Total uptime: {uptime}\nTimes launched: {times_launched}\nCommands executed: {commands_executed}\nCommands with errors: {commands_error}\nMessages sent by me: {messages_sent}",
+			"txt_error": ""
+		},
+		"on": {
+			"cmd_name": "!on",
+			"cmd_short": "",
+			"info": "shows if bot is online right now",
+			"entry_method": "cmd_on",
+			"is_oper": false,
+			"txt_executed": "I've been online for %s minutes now.",
+			"txt_error": ""
+		},
+		"urban_dictionary": {
+			"cmd_name": "!urban",
+			"cmd_short": "",
+			"info": "shows Urban Dictionary definition",
+			"entry_method": "cmd_urban_dict",
+			"is_oper": false,
+			"txt_executed": "%s. %s\nDefinition: %s\nExample: %s\n\n",
+			"txt_error": "Can't find anything."
+		},
+		"weather": {
+			"cmd_name": "!orai",
+			"cmd_short": "",
+			"info": "shows weather",
+			"entry_method": "cmd_weather",
+			"is_oper": false,
+			"txt_executed": "In %s now is %s, %s. Tomorrow day %s %s, night %s %s"
+		},
+		"wikipedia": {
+			"cmd_name": "!wiki",
+			"cmd_short": "",
+			"info": "shows Wikipedia article extract",
+			"entry_method": "cmd_wikipedia",
+			"is_oper": false,
+			"txt_executed": "",
+			"txt_error": "Can't find anything."
+		},
+		"onseen": {
+			"cmd_name": "!onseen",
+			"cmd_short": "",
+			"info": "writes a message to person, when he opens up chat",
+			"entry_method": "cmd_onseen",
+			"is_oper": false,
+			"txt_executed": "Sure will do.",
+			"txt_onseen": "%s, %s is telling you: %s"
+		},
+		"roll": {
+			"cmd_name": "!roll",
+			"cmd_short": "",
+			"info": "rolls a number for given max value (inclusive)",
+			"entry_method": "cmd_roll",
+			"is_oper": false,
+			"txt_executed": "%s rolled %s."
+		},
+		"unfair_roll": {
+			"cmd_name": "!roll1",
+			"cmd_short": "",
+			"info": "another way to roll",
+			"entry_method": "cmd_unfair_roll",
+			"is_oper": false,
+			"txt_executed": "",
+			"rolls": {
+				"This will always roll": "1",
+				"This will never roll": "0"
+			}
+		},
+		"time": {
+			"cmd_name": "!time",
+			"cmd_short": "",
+			"info": "shows current time and date",
+			"entry_method": "cmd_time",
+			"is_oper": false,
+			"txt_executed": "",
+			"txt_format": "%Y-%m-%d %H:%M:%S%n%B %d, day %A%n%j, week %W"
+		},
+		"annoy": {
+			"cmd_name": "!annoy",
+			"cmd_short": "",
+			"entry_method": "cmd_annoy",
+			"info": "writes a message immediately after the person writes a message",
+			"is_oper": false,
+			"txt_executed": "Affirmative.",
+			"txt_annoy_done": "I'm done.",
+			"annoy_limit": 5
+		},
+		"unannoy": {
+			"cmd_name": "!unannoy",
+			"cmd_short": "",
+			"info": "",
+			"entry_method": "cmd_unannoy",
+			"is_oper": true,
+			"txt_executed": "Of course, master."
+		},
+		"savestats": {
+			"cmd_name": "!savestats",
+			"cmd_short": "",
+			"info": "",
+			"entry_method": "cmd_savestats",
+			"is_oper": true,
+			"txt_executed": "Stats saved.",
+			"txt_wrong_args": ""
+		},
+		"updateconfig": {
+			"cmd_name": "!updateconfig",
+			"cmd_short": "",
+			"info": "",
+			"entry_method": "cmd_updateconfig",
+			"is_oper": true,
+			"txt_executed": "Config updated.",
+			"txt_wrong_args": ""
+		},
+		"say": {
+			"cmd_name": "!say",
+			"cmd_short": "",
+			"info": "bot repeats what you say",
+			"entry_method": "cmd_say",
+			"is_oper": false,
+			"txt_executed": "",
+			"txt_error_arg": "I can't annoy nothing."
+		},
+		"add_adressing_name": {
+			"cmd_name": "!addressingname",
+			"cmd_short": "",
+			"info": "add a name to how bot addresses you",
+			"entry_method": "cmd_add_addressing_name",
+			"is_oper": false,
+			"txt_executed": "Now I will address you as '%s'.",
+			"txt_error_arg": ""
+		},
+		"add_nickname": {
+			"cmd_name": "!addnickname",
+			"cmd_short": "",
+			"info": "add a nickname to how bot calls you",
+			"entry_method": "cmd_add_nickname",
+			"is_oper": false,
+			"txt_executed": "Now I will call you '%s'.",
+			"txt_error_arg": ""
+		},
+		"save_user_list": {
+			"cmd_name": "!saveuserlist",
+			"cmd_short": "",
+			"info": "",
+			"entry_method": "cmd_save_user_list",
+			"is_oper": true,
+			"txt_executed": "%s users added to list. %s users marked as in chat. %s users marked as removed from chat.",
+			"txt_error_arg": ""
+		},
+		"help": {
+			"cmd_name": "!help",
+			"cmd_short": "",
+			"info": "shows help",
+			"entry_method": "cmd_help",
+			"is_oper": false,
+			"txt_executed": "Available commands:\n",
+			"txt_error_arg": ""
+		}
+	},
+	"respond_to_words": [
+		{
+			"triggers": [
+				"\\bhello\\b",
+				"\\bhi\\b",
+				"\\bhey\\b",
+				"\\bhola\\b"
+			],
+			"answers": [
+				"Bonsoir, {addr_name}.",
+				"Hi, {addr_name}.",
+				"Hello, {addr_name}."
+			],
+			"for_users": []
+		},
+		{
+			"triggers": [
+				"^cya$",
+				"^see ((y(ou)|a|u)|u)$"
+			],
+			"answers": [
+				"Bye."
+			],
+			"for_users": []
+		}
+	]
+}

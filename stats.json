@@ -1,9 +1,17 @@
 {
 	"uptime_minutes": 0,
+	"current_uptime": 0,
 	"times_launched": 0,
 	"messages_sent": 0,
 	"commands_executed": 0,
 	"commands_error": 0,
-	"commands": {}
-	
+	"commands": {},
+	"quiz": {
+		"total_questions": 0,
+		"total_answered": 0,
+		"last_answered": "",
+		"users": {}
+	},
+	"onseen_list": [],
+	"annoy_list": []
 }
